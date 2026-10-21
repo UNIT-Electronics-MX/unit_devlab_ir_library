@@ -33,7 +33,7 @@ public:
     static constexpr uint16_t DEVICE_ID = 0x0111U;
 
     /* Factory I2C address (STARTUP_I2C_ADDRESS). */
-    static constexpr uint8_t DEFAULT_ADDRESS = 0x30U;
+    static constexpr uint8_t DEFAULT_ADDRESS = 0x31U;
 
     /* Bits returned by readStatus() (command 0x81). */
     static constexpr uint8_t STATUS_NEW_FRAME = 0x01U;
