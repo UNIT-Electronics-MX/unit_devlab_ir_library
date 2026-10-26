@@ -54,6 +54,9 @@ void loop() {
 | `0x80` | `readCarrier()` | 1 byte, bit0 = carrier present (output low) |
 | `0x81` | `readStatus()` | 1 byte of flags; clears event bits |
 | `0x82` | `readRawFrame()` | 4 bytes `addr, ~addr, cmd, ~cmd`; clears `NEW_FRAME` |
+| `0x83` | `readRawInfo()` | Raw capture summary: edges, pending, flags, capture number (firmware 1.2+) |
+| `0x84` | `readRawEdge()` | Next edge of the capture: duration in us, carrier/idle, edges left (firmware 1.2+) |
+| `0x85` | `readDiagnostic()` | Interrupt edge counter, input pin level, config (firmware 1.5+) |
 
 Status bits: `0x01` new frame, `0x02` repeat, `0x04` checksum OK, `0x08`
 carrier now, `0x10` timing error.
@@ -71,7 +74,7 @@ carrier now, `0x10` timing error.
 DevLab_IR/
 ├── examples/
 │   ├── i2c/{changeAddress,i2c_scanner}
-│   └── ir/{readNec,irEvents}
+│   └── ir/{readNec,readRaw,irEvents}
 ├── src/DevLab_IR.{h,cpp}
 ├── library.properties
 ├── keywords.txt

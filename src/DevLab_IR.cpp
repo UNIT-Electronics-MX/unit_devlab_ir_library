@@ -68,11 +68,48 @@ bool DevLab_IR::poll(DevLab_IR_Frame &out) {
         uint8_t raw[4];
         if (!readRawFrame(raw)) return false;
         out.newFrame = true;
-        out.address = raw[0];
+        out.extended = (uint8_t)(raw[0] ^ raw[1]) != 0xFFU;
+        out.address = out.extended ? ((uint16_t)raw[0] | ((uint16_t)raw[1] << 8)) : raw[0];
         out.command = raw[2];
         out.valid = (status & STATUS_CHECK_OK) != 0U &&
-                    (uint8_t)(raw[0] ^ raw[1]) == 0xFFU &&
                     (uint8_t)(raw[2] ^ raw[3]) == 0xFFU;
     }
+    return true;
+}
+
+bool DevLab_IR::readRawInfo(DevLab_IR_RawInfo &info) {
+    info = DevLab_IR_RawInfo();
+    if (!supportsRaw()) return false;
+    uint8_t raw[4];
+    if (!_ddp.readCommand(_address, CMD_RAW_INFO, raw, 4U, _kResponseDelayMs)) return false;
+    if (raw[0] > RAW_MAX_EDGES || raw[1] > raw[0] || (raw[2] & 0xF8U) != 0U) return false;
+    info.edges = raw[0];
+    info.pending = raw[1];
+    info.available = (raw[2] & 0x01U) != 0U;
+    info.truncated = (raw[2] & 0x04U) != 0U;
+    info.capture = raw[3];
+    return true;
+}
+
+bool DevLab_IR::readRawEdge(DevLab_IR_RawEdge &edge) {
+    edge = DevLab_IR_RawEdge();
+    if (!supportsRaw()) return false;
+    uint8_t raw[4];
+    if (!_ddp.readCommand(_address, CMD_RAW_EDGE, raw, 4U, _kResponseDelayMs)) return false;
+    if ((raw[2] & 0x80U) == 0U) return false;  /* no edge returned */
+    edge.durationUs = (uint16_t)raw[0] | ((uint16_t)raw[1] << 8);
+    edge.carrier = (raw[2] & 0x01U) != 0U;
+    edge.pending = raw[3];
+    return true;
+}
+
+bool DevLab_IR::readDiagnostic(DevLab_IR_Diagnostic &diag) {
+    diag = DevLab_IR_Diagnostic();
+    if (!supportsDiagnostics()) return false;
+    uint8_t raw[4];
+    if (!_ddp.readCommand(_address, CMD_DIAGNOSTIC, raw, 4U, _kResponseDelayMs)) return false;
+    diag.edgeCount = (uint16_t)raw[0] | ((uint16_t)raw[1] << 8);
+    diag.inputHigh = (raw[2] & 0x02U) != 0U;
+    diag.config = raw[3];
     return true;
 }

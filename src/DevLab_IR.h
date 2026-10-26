@@ -20,10 +20,37 @@ struct DevLab_IR_Frame
 {
     bool newFrame = false;   /* a complete NEC frame was received */
     bool repeat = false;     /* repeat code (key held down) */
-    bool valid = false;      /* ~address / ~command check passed (newFrame only) */
+    bool valid = false;      /* ~command check passed (newFrame only) */
     bool timingError = false;/* a frame with out-of-tolerance timing was seen */
-    uint8_t address = 0U;    /* NEC address byte (newFrame only) */
+    uint16_t address = 0U;   /* NEC address: 8 bits, or 16 bits if extended (newFrame only) */
     uint8_t command = 0U;    /* NEC command byte (newFrame only) */
+    bool extended = false;   /* 16-bit address, no ~address byte (newFrame only) */
+};
+
+/* Result of DevLab_IR::readRawInfo() (command 0x83, firmware 1.2+). */
+struct DevLab_IR_RawInfo
+{
+    uint8_t edges = 0U;      /* edges stored in the capture */
+    uint8_t pending = 0U;    /* edges not yet read with readRawEdge() */
+    uint8_t capture = 0U;    /* capture sequence number */
+    bool available = false;  /* a capture is ready to be read */
+    bool truncated = false;  /* the capture filled the buffer and lost edges */
+};
+
+/* Result of DevLab_IR::readRawEdge() (command 0x84, firmware 1.2+). */
+struct DevLab_IR_RawEdge
+{
+    uint16_t durationUs = 0U;/* width of the pulse/gap in microseconds */
+    bool carrier = false;    /* true: it follows a carrier burst; false: idle */
+    uint8_t pending = 0U;    /* edges still left after this one */
+};
+
+/* Result of DevLab_IR::readDiagnostic() (command 0x85, firmware 1.5+). */
+struct DevLab_IR_Diagnostic
+{
+    uint16_t edgeCount = 0U; /* total interrupt edges seen since reset */
+    bool inputHigh = false;  /* current level of the receiver input pin */
+    uint8_t config = 0U;     /* firmware pin configuration byte */
 };
 
 class DevLab_IR
@@ -65,6 +92,20 @@ public:
      * the frame itself. Returns false on an I2C error. */
     bool poll(DevLab_IR_Frame &out);
 
+    /* Raw pulse capture, protocol independent. readRawInfo() reports whether a
+     * capture is ready; readRawEdge() then returns its edges one by one until
+     * `pending` is 0. Each returns false on an I2C error or an inconsistent
+     * response. Check supportsRaw() first. */
+    bool readRawInfo(DevLab_IR_RawInfo &info);
+    bool readRawEdge(DevLab_IR_RawEdge &edge);
+
+    /* Edge counter and pin state (command 0x85). Check supportsDiagnostics(). */
+    bool readDiagnostic(DevLab_IR_Diagnostic &diag);
+
+    /* Firmware capabilities, from the version read by begin(). */
+    bool supportsRaw() const { return _verified && _fwAtLeast(1U, 2U); }
+    bool supportsDiagnostics() const { return _verified && _fwAtLeast(1U, 5U); }
+
     bool busReady() const { return _busReady; }
     bool isConnected() const { return _verified; }
     uint8_t address() const { return _address; }
@@ -78,7 +119,16 @@ private:
     static constexpr uint8_t CMD_READ_LEVEL = 0x80U;
     static constexpr uint8_t CMD_READ_STATUS = 0x81U;
     static constexpr uint8_t CMD_READ_FRAME = 0x82U;
+    static constexpr uint8_t CMD_RAW_INFO = 0x83U;
+    static constexpr uint8_t CMD_RAW_EDGE = 0x84U;
+    static constexpr uint8_t CMD_DIAGNOSTIC = 0x85U;
+    static constexpr uint8_t RAW_MAX_EDGES = 80U;
     static constexpr uint16_t _kResponseDelayMs = 2U;
+
+    bool _fwAtLeast(uint8_t major, uint8_t minor) const {
+        return _info.firmwareMajor > major ||
+               (_info.firmwareMajor == major && _info.firmwareMinor >= minor);
+    }
 
     DevLab_I2C_Orchestrator _bus;
     DevLabDDP::Master _ddp;

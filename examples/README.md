@@ -3,6 +3,7 @@
 | Example | Purpose |
 |---|---|
 | `ir/readNec` | Verify Device ID `0x0111` and print the NEC address/command of every key; a held key prints `repeat`. |
+| `ir/readRaw` | Capture demodulated pulses (firmware 1.2+, no protocol assumed) with a periodic diagnostic line: carrier level, status, edge counter. |
 | `ir/irEvents` | Low-level view: carrier level, status flags and the 4 raw NEC bytes (`addr ~addr cmd ~cmd`). |
 | `i2c/changeAddress` | Scan the bus and change the I2C address of an IRM-V838M3 node. |
 | `i2c/i2c_scanner` | List every address that acknowledges on the bus. |
