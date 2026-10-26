@@ -59,7 +59,8 @@ void loop() {
 | `0x85` | `readDiagnostic()` | Interrupt edge counter, input pin level, config (firmware 1.5+) |
 
 Status bits: `0x01` new frame, `0x02` repeat, `0x04` checksum OK, `0x08`
-carrier now, `0x10` timing error.
+carrier now, `0x10` timing error, `0x20` raw capture ready, `0x40` raw
+capture truncated. `0x20` and `0x40` are not cleared by reading the status.
 
 # Notes
 

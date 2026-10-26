@@ -68,6 +68,7 @@ bool DevLab_IR::poll(DevLab_IR_Frame &out) {
         uint8_t raw[4];
         if (!readRawFrame(raw)) return false;
         out.newFrame = true;
+        for (uint8_t i = 0U; i < 4U; ++i) out.raw[i] = raw[i];
         out.extended = (uint8_t)(raw[0] ^ raw[1]) != 0xFFU;
         out.address = out.extended ? ((uint16_t)raw[0] | ((uint16_t)raw[1] << 8)) : raw[0];
         out.command = raw[2];
@@ -109,7 +110,8 @@ bool DevLab_IR::readDiagnostic(DevLab_IR_Diagnostic &diag) {
     uint8_t raw[4];
     if (!_ddp.readCommand(_address, CMD_DIAGNOSTIC, raw, 4U, _kResponseDelayMs)) return false;
     diag.edgeCount = (uint16_t)raw[0] | ((uint16_t)raw[1] << 8);
-    diag.inputHigh = (raw[2] & 0x02U) != 0U;
+    diag.carrier = (raw[2] & 0x01U) != 0U;
+    diag.outputHigh = (raw[2] & 0x02U) != 0U;
     diag.config = raw[3];
     return true;
 }

@@ -71,7 +71,13 @@ void loop() {
   }
 
   if (frame.newFrame) {
-    Serial.print("NEC addr=0x");
+    Serial.print("NEC ");
+    for (uint8_t i = 0U; i < 4U; ++i) {
+      if (frame.raw[i] < 0x10U) Serial.print('0');
+      Serial.print(frame.raw[i], HEX);
+      Serial.print(' ');
+    }
+    Serial.print(" addr=0x");
     Serial.print(frame.address, HEX);
     Serial.print(" cmd=0x");
     Serial.print(frame.command, HEX);

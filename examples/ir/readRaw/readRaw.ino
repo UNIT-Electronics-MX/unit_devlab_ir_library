@@ -82,8 +82,8 @@ void printDiagnostic() {
       Serial.print(diag.edgeCount);
       Serial.print(" (+");
       Serial.print((uint16_t)(diag.edgeCount - lastEdgeCount));
-      Serial.print(") input=");
-      Serial.print(diag.inputHigh ? "HIGH" : "LOW");
+      Serial.print(") PB5=");
+      Serial.print(diag.outputHigh ? "HIGH" : "LOW");
       Serial.print(" config=0x");
       Serial.print(diag.config, HEX);
       lastEdgeCount = diag.edgeCount;

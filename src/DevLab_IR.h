@@ -24,6 +24,7 @@ struct DevLab_IR_Frame
     bool timingError = false;/* a frame with out-of-tolerance timing was seen */
     uint16_t address = 0U;   /* NEC address: 8 bits, or 16 bits if extended (newFrame only) */
     uint8_t command = 0U;    /* NEC command byte (newFrame only) */
+    uint8_t raw[4] = {0U, 0U, 0U, 0U}; /* bytes as received: addr, ~addr (or addr high), cmd, ~cmd (newFrame only) */
     bool extended = false;   /* 16-bit address, no ~address byte (newFrame only) */
 };
 
@@ -41,7 +42,8 @@ struct DevLab_IR_RawInfo
 struct DevLab_IR_RawEdge
 {
     uint16_t durationUs = 0U;/* width of the pulse/gap in microseconds */
-    bool carrier = false;    /* true: it follows a carrier burst; false: idle */
+    bool carrier = false;    /* level after the edge: true = carrier (output low), false = idle.
+                              * durationUs is the width of the level BEFORE this edge. */
     uint8_t pending = 0U;    /* edges still left after this one */
 };
 
@@ -49,8 +51,9 @@ struct DevLab_IR_RawEdge
 struct DevLab_IR_Diagnostic
 {
     uint16_t edgeCount = 0U; /* total interrupt edges seen since reset */
-    bool inputHigh = false;  /* current level of the receiver input pin */
-    uint8_t config = 0U;     /* firmware pin configuration byte */
+    bool carrier = false;    /* receiver input pin (PA2) is low: carrier detected */
+    bool outputHigh = false; /* output register of PB5 is high */
+    uint8_t config = 0U;     /* GPIO/EXTI configuration bits; 0x1F when correct */
 };
 
 class DevLab_IR
@@ -68,6 +71,8 @@ public:
     static constexpr uint8_t STATUS_CHECK_OK = 0x04U;
     static constexpr uint8_t STATUS_CARRIER = 0x08U;
     static constexpr uint8_t STATUS_ERROR = 0x10U;
+    static constexpr uint8_t STATUS_RAW_READY = 0x20U;    /* raw capture ready; not cleared by readStatus() */
+    static constexpr uint8_t STATUS_RAW_OVERFLOW = 0x40U; /* raw capture truncated; not cleared by readStatus() */
 
     explicit DevLab_IR(TwoWire &wire = Wire, uint8_t address = DEFAULT_ADDRESS, uint32_t clock = 400000UL)
     : _bus(wire, clock), _ddp(_bus, DEVICE_ID), _address(address), _clock(clock) {}
